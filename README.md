@@ -1,7 +1,7 @@
 # Scratchnet
 Building a Neural Network from Scratch using Python
 
-##The XOR Problem
+## The XOR Problem
 
 The XOR problem is a classic problem in the field of artificial intelligence and machine learning. XOR, which stands for exclusive or, is a logical operation that takes two binary inputs and produces a binary output. The operation returns true (1) if the number of true inputs is odd, and false (0) if it's even.
 
