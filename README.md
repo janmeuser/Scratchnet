@@ -1,2 +1,2 @@
 # Scratchnet
-Build a Neural Network from Scratch using Python
+Building a Neural Network from Scratch using Python
