@@ -1,10 +1,9 @@
 #building a neural network from scratch solving the xor problem
 
-import terminaltables 
-from terminaltables import AsciiTable
+#import terminaltables 
+#from terminaltables import AsciiTable
 import numpy as np
-
-from prettytable import PrettyTable
+import json
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
@@ -68,18 +67,10 @@ class NeuralNetwork:
         predictions = []
         for i, x in enumerate(inputs):
             output = self.forward(x)
-            predictions.append(output)
+            predictions.append(output[0][0])
 
-        # Erstellen der Tabelle
-        table = PrettyTable(["Input 1", "Input 2", "Prediction"])
-
-        for i, x in enumerate(inputs):
-            row_values = [str(val) for val in x] + [f"{predictions[i][0][0]:.3f}"]
-            table.add_row(row_values)
-
-        # Tabelle ausgeben
-        print(table)
-
+        results = [{"Input": x.tolist(), "Prediction": float(prediction)} for x, prediction in zip(inputs, predictions)]
+        print(json.dumps(results, indent=2))
 
 # XOR-Problem
 inputs = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
@@ -91,7 +82,7 @@ hidden_size = 2
 output_size = targets.shape[1]
 
 nn = NeuralNetwork(input_size, hidden_size, output_size)
-nn.train(inputs, targets, epochs=10000, learning_rate=0.1)
+nn.train(inputs, targets, epochs=20000, learning_rate=0.001)
 
 # Testen des trainierten Netzwerks
 print("Testergebnisse:")
