@@ -1,147 +1,98 @@
-#Building a neural network from scratch
+#building a neural network from scratch solving the xor problem
 
+import terminaltables 
+from terminaltables import AsciiTable
 import numpy as np
-import time
-import matplotlib.pyplot as plt
 
-class DifferentiableFunction:
-    def derivative(self, net_input):
-        pass
+from prettytable import PrettyTable
 
-    def __call__(self, net_input):
-        pass
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
 
-class Sigmoid(DifferentiableFunction):
-    def derivative(self, net_input):
-        return self(net_input) * (1 - self(net_input))
+def sigmoid_derivative(x):
+    return x * (1 - x)
 
-    def __call__(self, net_input):
-        return 1 / (1 + np.exp(-net_input))
+class NeuralNetwork:
+    def __init__(self, input_size, hidden_size, output_size):
+        # Initialisierung der Gewichtungen und Biases
+        self.weights_input_hidden = np.random.rand(input_size, hidden_size)
+        self.bias_hidden = np.zeros((1, hidden_size))
+        self.weights_hidden_output = np.random.rand(hidden_size, output_size)
+        self.bias_output = np.zeros((1, output_size))
 
-class SquaredError:
-    def __call__(self, predictions, targets):
-        return np.mean((predictions - targets) ** 2)
+    def forward(self, inputs):
+        # Forward-Pass
+        self.hidden_input = np.dot(inputs, self.weights_input_hidden) + self.bias_hidden
+        self.hidden_output = sigmoid(self.hidden_input)
+        self.final_input = np.dot(self.hidden_output, self.weights_hidden_output) + self.bias_output
+        self.final_output = sigmoid(self.final_input)
+        return self.final_output
 
-    def gradient(self, predictions, targets):
-        return 2 * (predictions - targets) / len(predictions)
+    def backward(self, inputs, targets, learning_rate):
+        # Berechnung des Fehlers und der Gradienten
+        error = targets - self.final_output
+        delta_output = error * sigmoid_derivative(self.final_output)
+        error_hidden = delta_output.dot(self.weights_hidden_output.T)
+        delta_hidden = error_hidden * sigmoid_derivative(self.hidden_output)
 
-class DenseLayer:
-    def __init__(self, neuron_count, activation=None):
-        self.neuron_count = neuron_count
-        self.activation_func = activation or Sigmoid()
-        self.weights = None
-        self.biases = None
-        self.layer_inputs = None
-        self.activation_vec = None
-        self.weight_gradients = None
-        self.bias_gradients = None
+        # Aktualisierung der Gewichtungen und Biases
+        self.weights_hidden_output += learning_rate * self.hidden_output.T.dot(delta_output)
+        self.bias_output += learning_rate * np.sum(delta_output, axis=0, keepdims=True)
+        self.weights_input_hidden += learning_rate * np.array([inputs]).T.dot(delta_hidden)
+        self.bias_hidden += learning_rate * np.sum(delta_hidden, axis=0, keepdims=True)
 
-    def initialize_parameters(self, input_size):
-        self.weights = np.random.randn(self.neuron_count, input_size)
-        self.biases = np.random.randn(self.neuron_count, 1)
+        return delta_hidden
 
-    def compute_cost_gradients(self, targets, cost_func):
-        cost = cost_func(self.activation_vec, targets)
-        delta = cost_func.gradient(self.activation_vec, targets)
-        self.bias_gradients = delta.mean(axis=0).reshape(-1, 1)
-        self.weight_gradients = np.dot(delta, self.layer_inputs.T)
-        return delta.dot(self.weights)
 
-    def feed_backwards(self, prev_input_gradients):
-        return prev_input_gradients.dot(self.weights)
-
-    def feed_forward_layer(self, input_activations):
-        self.layer_inputs = np.dot(self.weights, input_activations) + self.biases
-        self.activation_vec = self.activation_func(self.layer_inputs)
-        return self.activation_vec
-
-class ScratchNet:
-    def __init__(self, layers):
-        self.learning_rate = 0.5
-        self.cost_func = SquaredError()
-        self.layers = layers
-        for index, layer in enumerate(self.layers):
-            input_size = 2 if index == 0 else self.layers[index - 1].neuron_count
-            layer.initialize_parameters(input_size)
-
-    def _update_parameters(self, input_samples):
-        weight_gradients = [np.zeros(layer.weights.shape) for layer in self.layers]
-        bias_gradients = [np.zeros(layer.biases.shape) for layer in self.layers]
-
-        for sample in input_samples:
-            sample_weight_gradients, sample_bias_gradients = self._backpropagate(sample)
-            weight_gradients = np.add(weight_gradients, sample_weight_gradients)
-            bias_gradients = np.add(bias_gradients, sample_bias_gradients)
-
-        for layer, layer_weight_gradients, layer_bias_gradients in zip(self.layers, weight_gradients, bias_gradients):
-            layer.weights -= self.learning_rate * layer_weight_gradients / len(input_samples)
-            layer.biases -= self.learning_rate * layer_bias_gradients / len(input_samples)
-
-    def _backpropagate(self, training_sample):
-        train_input, train_output = training_sample
-        self._feed_forward(train_input)
-        gradients = self.layers[-1].compute_cost_gradients(train_output, cost_func=self.cost_func)
-
-        for layer in reversed(self.layers[1:]):
-            gradients = layer.feed_backwards(gradients)
-
-        weight_gradients = [layer.weight_gradients for layer in self.layers]
-        bias_gradients = [layer.bias_gradients for layer in self.layers]
-        return weight_gradients, bias_gradients
-
-    def _feed_forward(self, input_sample):
-        for layer in self.layers:
-            input_sample = layer.feed_forward_layer(input_sample)
-        return input_sample
-
-    def fit(self, train_inputs, train_labels, epochs=1):
-        training_data = list(zip(train_inputs, train_labels))
-        losses = []
+    def train(self, inputs, targets, epochs, learning_rate):
         for epoch in range(epochs):
-            self._update_parameters(training_data)
-            loss = self._calculate_loss(training_data)
-            losses.append(loss)
-            print(f"Epoch {epoch + 1}: loss={loss:.3f}")
-        return losses
+            total_loss = 0
+            for i in range(len(inputs)):
+                x = inputs[i]
+                y = targets[i]
 
-    def _calculate_loss(self, input_samples):
+                # Forward-Pass
+                output = self.forward(x)
+
+                # Berechnung des Loss
+                loss = np.mean((y - output) ** 2)
+                total_loss += loss
+
+                # Backward-Pass und Aktualisierung der Gewichtungen
+                self.backward(x, y, learning_rate)
+
+            average_loss = total_loss / len(inputs)
+            print(f"Epoch {epoch + 1}, Loss: {average_loss:.4f}")
+
+    def predict(self, inputs):
         predictions = []
-        targets = []
-        for sample in input_samples:
-            train_input, train_output = sample
-            prediction = self._feed_forward(train_input)
-            predictions.append(prediction)
-            targets.append(train_output)
-        return self.cost_func(np.array(predictions), np.array(targets))
+        for i, x in enumerate(inputs):
+            output = self.forward(x)
+            predictions.append(output)
 
-    def predict(self, model_inputs):
-        predictions = []
-        for model_input in model_inputs:
-            prediction = self._feed_forward(model_input)
-            predictions.append(prediction)
-        return np.array(predictions)
+        # Erstellen der Tabelle
+        table = PrettyTable(["Input 1", "Input 2", "Prediction"])
 
-def xor():
-    xor_train_inputs = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-    xor_train_labels = np.array([[0], [1], [1], [0]])
+        for i, x in enumerate(inputs):
+            row_values = [str(val) for val in x] + [f"{predictions[i][0][0]:.3f}"]
+            table.add_row(row_values)
 
-    xor_net = ScratchNet([
-        DenseLayer(neuron_count=2, activation=Sigmoid()),
-        DenseLayer(neuron_count=1, activation=Sigmoid())
-    ])
+        # Tabelle ausgeben
+        print(table)
 
-    losses = xor_net.fit(xor_train_inputs, xor_train_labels, epochs=10000)
 
-    plt.plot(losses, label="loss")
-    plt.legend()
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.show()
+# XOR-Problem
+inputs = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
+targets = np.array([[0], [1], [1], [0]])
 
-    xor_test_inputs = np.array([[0, 0], [0, 1], [1, 0], [1, 1]])
-    predictions = xor_net.predict(xor_test_inputs)
-    print("Predictions:")
-    print(predictions)
+# Initialisierung und Training des neuronalen Netzwerks
+input_size = inputs.shape[1]
+hidden_size = 2
+output_size = targets.shape[1]
 
-# Call the xor function to execute the code
-xor()
+nn = NeuralNetwork(input_size, hidden_size, output_size)
+nn.train(inputs, targets, epochs=10000, learning_rate=0.1)
+
+# Testen des trainierten Netzwerks
+print("Testergebnisse:")
+nn.predict(inputs)
