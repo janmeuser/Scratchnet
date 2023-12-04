@@ -18,3 +18,5 @@ Here's the truth table for XOR:
 The challenge with the XOR problem arises when trying to find a linear decision boundary to separate the two classes (0 and 1). Linear models, like single-layer perceptrons, fail to solve the XOR problem because they can only learn linearly separable functions. In the XOR case, the data points are not linearly separable in the input space.
 
 To solve the XOR problem, more complex models with non-linear activation functions and multiple layers, such as neural networks, are needed. Neural networks with hidden layers can learn to capture the non-linear relationships between inputs and produce the correct XOR output.
+
+The following script scratchNet.py displays a table showing the input and predicted results.
