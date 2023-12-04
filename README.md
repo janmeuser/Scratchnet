@@ -19,5 +19,4 @@ The challenge with the XOR problem arises when trying to find a linear decision 
 
 To solve the XOR problem, more complex models with non-linear activation functions and multiple layers, such as neural networks, are needed. Neural networks with hidden layers can learn to capture the non-linear relationships between inputs and produce the correct XOR output.
 
-The following script [scratchNet.py](./Scratchnet/scratchNet.py)
-y displays a table showing the input and predicted results.
+The atteached script displays a table showing the input and predicted results.
